@@ -11,6 +11,3 @@ docker compose build builder
 
 # Run the build process
 docker compose run --rm --remove-orphans builder
-
-echo ""
-echo "Done! If successful, ps5-bd-jb-autoloader.iso should be in the current directory."

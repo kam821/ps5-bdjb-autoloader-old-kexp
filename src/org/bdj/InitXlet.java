@@ -22,13 +22,14 @@ public class InitXlet implements Xlet {
     private final String jarLoaderThreadName = "JarLoader";
     
     public void initXlet(XletContext context) {
-        
-        Status.println("BD-J init");
         Status.setScreenOutputEnabled(true);
         Status.setNetworkLoggerEnabled(false);
+        Status.info("BD-J init");
 
         screen = Screen.getInstance();
         screen.setSize(1920, 1080);
+        screen.setTitle("PS5 BD-JB Autoloader");
+        Status.setProgress(0, "Initializing...");
 
         scene = HSceneFactory.getInstance().getDefaultHScene();
         scene.add(screen, BorderLayout.CENTER);
@@ -39,22 +40,25 @@ public class InitXlet implements Xlet {
         screen.setVisible(true);
         scene.setVisible(true);
         
-        Status.println("Screen initialized");
+        Status.success("Screen initialized");
         
         try {
-            Status.println("Triggering sandbox escape exploit...");
+            Status.info("Triggering sandbox escape exploit...");
+            Status.setProgress(10, "Running kernel exploit...");
             
             if (!Exploit.disableSecurityManager()) {
                 ExploitInternal.disableSecurityManager();
             }
 
-            Status.println(System.getSecurityManager() == null
-                ? "Exploit success - sandbox escape achieved"
-                : "Exploit failed - sandbox still active");
+            if (System.getSecurityManager() == null) {
+                Status.success("Exploit success - sandbox escape achieved");
+            } else {
+                Status.error("Exploit failed - sandbox still active");
+            }
 
             // Warm up network stack to prevent dlopen failures in dynamic JARs
             try {
-                Status.println("Warming up network stack...");
+                Status.info("Warming up network stack...");
                 InetAddress.getByName("127.0.0.1");
             } catch (Throwable ignored) {}
 
@@ -65,6 +69,8 @@ public class InitXlet implements Xlet {
         // Add sanity check
         if (System.getSecurityManager() == null) {
             try {
+                Status.info("Initializing autoloader...");
+                Status.setProgress(20, "Starting JarLoader...");
                 internalJarLoader = new InternalJarLoader();
                 internalJarLoaderThread = new Thread(internalJarLoader, jarLoaderThreadName);
                 internalJarLoaderThread.start();
@@ -72,7 +78,7 @@ public class InitXlet implements Xlet {
                 Status.printStackTrace("Loader startup failed", e);
             }
         } else {
-            Status.println("Sandbox is still activated");
+            Status.error("Sandbox is still activated");
         }
         
     }
@@ -85,9 +91,8 @@ public class InitXlet implements Xlet {
         scene.remove(screen);
         scene = null;
     }
-    
-    
 }
+
 
 
 

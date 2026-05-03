@@ -36,24 +36,69 @@ public class Status {
     }
 
     public static void println(String msg) {
-        String finalMsg = "[" + Thread.currentThread().getName() + "] " + msg;
+        info(msg);
+    }
+
+    public static void info(String msg) {
+        String finalMsg = msg;
         if (LOGGERBOOL) {
             initLogger();
-            LOGGER.println(finalMsg);
+            LOGGER.println("INFO: " + finalMsg);
         }
         if (WINDOWBOOL) {
-            Screen.println(finalMsg);
+            ProgressUI.getInstance().log(finalMsg);
+        }
+    }
+
+    public static void success(String msg) {
+        String finalMsg = msg;
+        if (LOGGERBOOL) {
+            initLogger();
+            LOGGER.println("SUCCESS: " + finalMsg);
+        }
+        if (WINDOWBOOL) {
+            ProgressUI.getInstance().logSuccess(finalMsg);
+        }
+    }
+
+    public static void warning(String msg) {
+        String finalMsg = msg;
+        if (LOGGERBOOL) {
+            initLogger();
+            LOGGER.println("WARNING: " + finalMsg);
+        }
+        if (WINDOWBOOL) {
+            ProgressUI.getInstance().logWarning(finalMsg);
+        }
+    }
+
+    public static void error(String msg) {
+        String finalMsg = msg;
+        if (LOGGERBOOL) {
+            initLogger();
+            LOGGER.println("ERROR: " + finalMsg);
+        }
+        if (WINDOWBOOL) {
+            ProgressUI.getInstance().logError(finalMsg);
+        }
+    }
+
+    public static void setProgress(int percent, String label) {
+        if (WINDOWBOOL) {
+            ProgressUI.getInstance().setProgress(percent, label);
         }
     }
 
     public static void printStackTrace(String msg, Throwable e) {
-        String finalMsg = "[" + Thread.currentThread().getName() + "] " + msg;
+        String finalMsg = msg;
         if (LOGGERBOOL) {
             initLogger();
-            LOGGER.printStackTrace(finalMsg, e);
+            LOGGER.printStackTrace("ERROR: " + finalMsg, e);
         }
         if (WINDOWBOOL) {
-            Screen.printStackTrace(finalMsg, e);
+            ProgressUI.getInstance().logError(finalMsg);
+            Screen.getInstance().printStackTrace(e);
         }
     }
+
 }

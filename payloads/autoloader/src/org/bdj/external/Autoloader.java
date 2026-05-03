@@ -40,21 +40,18 @@ public class Autoloader {
     }
 
     public static void main(String[] args) {
-        Status.println("Autoloader starting...");
-        
-        try {
-            int uid = (int) api.call(getuid);
-            int pid = (int) api.call(getpid);
-            Status.println("UID: " + uid + ", PID: " + pid);
-        } catch (Throwable ignored) {}
+        Status.setProgress(85, "Searching for config...");
 
         String configPath = findConfig();
         if (configPath == null) {
-            Status.println("No autoload.txt found.");
+            Status.warning("No autoload.txt found.");
+            Status.setProgress(100, "Finished (No config)");
+            try { Thread.sleep(2000); } catch (Exception ignored) {}
+            killApp();
             return;
         }
 
-        Status.println("Found config at: " + configPath);
+        Status.success("Found config at: " + configPath);
         byte[] configData = null;
         try {
             configData = readFileNative(configPath);
@@ -64,7 +61,10 @@ public class Autoloader {
         
         List commands = AutoloadConfigParser.parseCommands(configData);
         if (commands.isEmpty()) {
-            Status.println("Config is empty or could not be parsed.");
+            Status.warning("Config is empty or could not be parsed.");
+            Status.setProgress(100, "Finished (Empty config)");
+            try { Thread.sleep(2000); } catch (Exception ignored) {}
+            killApp();
             return;
         }
 
@@ -72,6 +72,19 @@ public class Autoloader {
         
         for (int i = 0; i < commands.size(); i++) {
             String command = (String) commands.get(i);
+            int currentProgress = 90 + (int) ((i * 10.0) / commands.size());
+            
+            // Try to resolve name for cleaner progress label
+            String label = command;
+            try {
+                File f = resolveFile(command, configDir);
+                if (existsNative(f.getAbsolutePath())) {
+                    label = f.getName();
+                }
+            } catch (Exception ignored) {}
+            
+            Status.setProgress(currentProgress, "Executing: " + label);
+            
             try {
                 processCommand(command, configDir);
             } catch (Exception e) {
@@ -79,13 +92,16 @@ public class Autoloader {
             }
         }
 
-        Status.println("Autoloader finished.");
+        Status.success("Finished");
+        Status.setProgress(100, "Finished");
         
+        try { Thread.sleep(200); } catch (Exception ignored) {}
         killApp();
     }
 
+
     private static String findConfig() {
-        Status.println("Searching for " + AUTOLOAD_FILE + "...");
+        Status.info("Searching for " + AUTOLOAD_FILE + "...");
 
         String[] bases = new String[11];
         for (int i = 0; i <= 7; i++) bases[i] = "/mnt/usb" + i;
@@ -97,23 +113,15 @@ public class Autoloader {
             
             // Check in subdirectory first
             String pathSub = base + "/" + AUTOLOAD_DIR + "/" + AUTOLOAD_FILE;
-            Status.println("Checking: " + pathSub);
+            //Status.info("Checking: " + pathSub);
             if (existsNative(pathSub)) {
-                Status.println("Found: " + pathSub);
                 return pathSub;
-            }
-
-            // Check in root as fallback
-            String pathRoot = base + "/" + AUTOLOAD_FILE;
-            Status.println("Checking: " + pathRoot);
-            if (existsNative(pathRoot)) {
-                Status.println("Found: " + pathRoot);
-                return pathRoot;
             }
         }
 
         return null;
     }
+
 
     private static void disableProxy(File f) {
         try {
@@ -162,7 +170,7 @@ public class Autoloader {
             while ((idx = msg.indexOf("\\n")) != -1) {
                 msg = msg.substring(0, idx) + "\n" + msg.substring(idx + 2);
             }
-            Status.println("Notification: " + msg);
+            Status.info("Notification: " + msg);
             NativeInvoke.sendNotificationRequest(msg);
             return;
         }
@@ -170,10 +178,10 @@ public class Autoloader {
         if (command.startsWith("!")) {
             try {
                 long delay = Long.parseLong(command.substring(1).trim());
-                Status.println("Delaying for " + delay + "ms...");
+                Status.info("Delaying for " + delay + "ms...");
                 Thread.sleep(delay);
             } catch (Exception e) {
-                Status.println("Invalid delay command: " + command);
+                Status.warning("Invalid delay command: " + command);
             }
             return;
         }
@@ -182,26 +190,29 @@ public class Autoloader {
         File file = resolveFile(command, configDir);
 
         if (!existsNative(file.getAbsolutePath())) {
-            Status.println("File not found: " + file.getAbsolutePath());
+            Status.warning("File not found: " + file.getAbsolutePath());
             return;
         }
 
         if (lower.endsWith(".jar")) {
+            Status.info("Executing JAR: " + file.getName());
             JarExecutor.execute(file);
         } else if (file.getName().equalsIgnoreCase("elfldr.elf")) {
             if (!isPortOpen(9021)) {
-                Status.println("Loading custom elfldr.elf: " + file.getAbsolutePath());
+                Status.info("Loading custom elfldr: " + file.getName());
                 byte[] elfData = readFileNative(file.getAbsolutePath());
                 ElfLoader.loadElf(elfData);
-                Status.println("Waiting for custom elfldr to start...");
+                Status.info("Waiting for custom elfldr to start...");
+                Status.setProgress(91, "Starting Custom ELF Loader...");
                 Thread.sleep(4000);
             } else {
-                Status.println("ELF loader already active, skipping custom elfldr.elf");
+                Status.info("ELF loader already active, skipping custom elfldr");
             }
         } else if (lower.endsWith(".elf") || lower.endsWith(".bin")) {
+            Status.info("Loading " + file.getName() + "...");
             executeElf(file);
         } else {
-            Status.println("Unsupported command: " + command);
+            Status.warning("Unsupported command: " + command);
         }
     }
 
@@ -218,17 +229,16 @@ public class Autoloader {
 
     private static void executeElf(File elfFile) throws Exception {
         if (!isPortOpen(9021)) {
-            Status.println("ELF loader not ready on port 9021, loading embedded elfldr...");
+            Status.info("ELF loader not ready on port 9021, loading embedded elfldr...");
             ElfLoader.loadEmbeddedElf();
-            Status.println("Waiting for elfldr to start...");
+            Status.info("Waiting for elfldr to start...");
+            Status.setProgress(91, "Starting ELF Loader...");
             Thread.sleep(4000);
             if (!isPortOpen(9021)) {
-                Status.println("[-] Warning: port 9021 still not open after 4s. Attempting to send anyway...");
+                Status.warning("Warning: port 9021 still not open after 4s. Attempting to send anyway...");
             }
         }
 
-        Status.println("Sending ELF to port 9021: " + elfFile.getAbsolutePath());
-        
         // Read ELF data
         byte[] elfData = readFileNative(elfFile.getAbsolutePath());
         
@@ -257,9 +267,9 @@ public class Autoloader {
             OutputStream os = s.getOutputStream();
             os.write(data);
             os.flush();
-            Status.println("Successfully sent " + data.length + " bytes to port " + port);
+            Status.success("Successfully sent " + data.length + " bytes to port " + port);
         } catch (IOException e) {
-            Status.println("[-] Error sending data to port " + port + ": " + e.getMessage());
+            Status.error("Error sending data to port " + port + ": " + e.getMessage());
             throw e;
         } finally {
             if (s != null) {
@@ -298,10 +308,11 @@ public class Autoloader {
     private static void killApp() {
         try {
             int pid = (int) api.call(getpid);
-            Status.println("Killing process " + pid);
+            Status.info("Killing process " + pid);
             api.call(kill, (long) pid, 9L);
         } catch (Throwable t) {
             Status.printStackTrace("Failed to kill app", t);
         }
     }
+
 }

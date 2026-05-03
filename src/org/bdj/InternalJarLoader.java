@@ -18,23 +18,24 @@ public class InternalJarLoader implements Runnable {
         try {
             File poopsJar = new File("/disc/poops.jar");
             if (poopsJar.exists()) {
-                Status.println("Loading poops.jar...");
+                Status.setProgress(30, "Executing poops.jar...");
                 runJar(poopsJar);
             } else {
-                Status.println("poops.jar not found at /disc/poops.jar");
+                Status.warning("poops.jar not found at /disc/poops.jar");
             }
             
             // Check if jailbreak succeeded via KernelAPI
             if (KernelAPI.getInstance().getKdataBase() != 0) {
                 File autoloaderJar = new File("/disc/autoloader.jar");
                 if (autoloaderJar.exists()) {
-                    Status.println("Jailbreak successful, loading autoloader.jar...");
+                    Status.success("Jailbreak successful!");
+                    Status.setProgress(80, "Starting Autoloader...");
                     runJar(autoloaderJar);
                 } else {
-                    Status.println("autoloader.jar not found at /disc/autoloader.jar");
+                    Status.warning("autoloader.jar not found at /disc/autoloader.jar");
                 }
             } else {
-                Status.println("Jailbreak not detected, skipping autoloader.jar");
+                Status.error("Jailbreak not detected, skipping autoloader.jar");
             }
         } catch (IOException e) {
             Status.printStackTrace("JarLoader error", e);
@@ -48,7 +49,7 @@ public class InternalJarLoader implements Runnable {
         File tempFile = File.createTempFile("loader", ".jar");
         tempFile.deleteOnExit();
         
-        Status.println("Copying JAR to " + tempFile.getAbsolutePath());
+        Status.info("Loading " + jarFile.getName() + "...");
         InputStream is = new FileInputStream(jarFile);
         OutputStream os = new FileOutputStream(tempFile);
         byte[] buf = new byte[8192];
@@ -94,14 +95,13 @@ public class InternalJarLoader implements Runnable {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(classLoader);
-            Status.println("Running " + mainClassName + "...");
             mainMethod.invoke(null, new Object[]{new String[0]});
         } finally {
             Thread.currentThread().setContextClassLoader(oldLoader);
             tempFile.delete();
         }
         
-        Status.println(mainClassName + " execution completed");
+        Status.success(mainClassName + " execution completed");
     }
 
     private void cleanupOldTempFiles() {
@@ -121,11 +121,11 @@ public class InternalJarLoader implements Runnable {
                     }
                 }
                 if (cleanedCount > 0) {
-                    Status.println("Cleaned up " + cleanedCount + " old temp JAR files");
+                    Status.info("Cleaned up " + cleanedCount + " old temp JAR files");
                 }
             }
         } catch (Exception e) {
-            Status.println("Warning: Could not clean temp files: " + e.getMessage());
+            Status.warning("Could not clean temp files: " + e.getMessage());
         }
     }
 }

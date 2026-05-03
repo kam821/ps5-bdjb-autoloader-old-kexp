@@ -434,7 +434,7 @@ public class GPU {
         GPU.kdata_base = kdata_base;
         GPU.curproc    = curproc;
 
-        Status.println("[GPU] Initializing GPU RW");
+        // Status.println("[GPU] Initializing GPU RW");
         
         KERNEL_PMAP_STORE = PS5_KernelOffset.getOffset("KERNEL_PMAP_STORE");
         GVMSPACE          = PS5_KernelOffset.getOffset("GVMSPACE");
@@ -490,40 +490,24 @@ public class GPU {
             return false;
         }
         
-        Status.println("[GPU] Patching kdata... ");
-
-        // Set security flags
-        Status.println("[GPU] Setting security flags");
+        Status.info("[GPU] Patching kernel data...");
+        
         long securityFlagsAddr = kdata_base + SECURITY_FLAGS;
         int securityFlags = kapi.kread32(securityFlagsAddr);
-        Status.println("  before: " + toHex32(securityFlags));
         gwrite32(securityFlagsAddr, securityFlags | 0x14);
-        Status.println("  after:  " + toHex32(kapi.kread32(securityFlagsAddr)));
         
-        // Set targetid to DEX
-        Status.println("[GPU] Setting targetid");
         long targetIdFlagsAddr = securityFlagsAddr + 0x09;
-        Status.println("  before: " + toHex8(kapi.kread8(targetIdFlagsAddr)));
         gwrite8(targetIdFlagsAddr, (byte) 0x82);
-        Status.println("  after:  " + toHex8(kapi.kread8(targetIdFlagsAddr)));
         
-        // Set qa flags for debug menu enable
-        Status.println("[GPU] Setting qa flags");
         long qaFlagsAddr = securityFlagsAddr + 0x24;
         int qaFlags = kapi.kread32(qaFlagsAddr);
-        Status.println("  qa_flags before: " + toHex32(qaFlags));
         gwrite32(qaFlagsAddr, qaFlags | 0x10300);
-        Status.println("  qa_flags after:  " + toHex32(kapi.kread32(qaFlagsAddr)));
         
-        // Set utoken flags for debug menu enable
-        Status.println("[GPU] Setting utoken flags");
         long utokenFlagsAddr = securityFlagsAddr + 0x8C;
         byte utokenFlags = kapi.kread8(utokenFlagsAddr);
-        Status.println("  utoken_flags before: " + toHex8(utokenFlags));
         gwrite8(utokenFlagsAddr, (byte) (utokenFlags | 0x01));
-        Status.println("  utoken_flags after:  " + toHex8(kapi.kread8(utokenFlagsAddr)));
         
-        Status.println("[GPU] Debug menu enabled");
+        Status.info("[GPU] Debug menus enabled");
         
         return true;
     }
