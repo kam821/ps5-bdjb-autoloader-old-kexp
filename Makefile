@@ -16,7 +16,7 @@
 
 
 DISC_LABEL := ps5-bd-jb-autoloader
-VERSION    := 0.2
+VERSION    := 1.0
 
 #
 # Host tools

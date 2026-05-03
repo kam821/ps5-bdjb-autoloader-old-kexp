@@ -279,12 +279,17 @@ public class Poops {
         getFirmware();
         
         Status.info("Console: " + PLATFORM + " " + FW_VERSION);
+        NID_PATH = "/" + getNidPath() + "/common_temp/bdj.fail";
         
-        NID_PATH = "/" + getNidPath() + "/common_temp/bdj.fail";        
-        //Status.info("NID path resolved");
-        
+        String successPath = NID_PATH.substring(0, NID_PATH.lastIndexOf("bdj.fail")) + "bdj.success";
+        if (new File(successPath).exists()) {
+            Status.success("Already jailbroken");
+            Status.error("Restart your console to run exploit again.");
+            return false;
+        }
+
         if(rerunCheck(NID_PATH)) {
-            Status.error("Restart your console to run exploit again, setup failed.");
+            Status.error("Setup failed last time, restart your console to try again.");
             return false;
         }
         
@@ -1328,7 +1333,6 @@ public class Poops {
     
     public static void main(String[] args) {
         Status.setNetworkLoggerEnabled(false);
-        
         Status.info(VERSION_STRING);
         
         if (kapi.getKdataBase() != 0) {
@@ -1434,6 +1438,12 @@ public class Poops {
             
             kapi.setKdataBase(kdata_base);
             kapi.setKqFdp(kq_fdp);
+            
+            try {
+                new File(NID_PATH).delete();
+                String successPath = NID_PATH.substring(0, NID_PATH.lastIndexOf("bdj.fail")) + "bdj.success";
+                new File(successPath).createNewFile();
+            } catch (Exception ignored) {}
             
             Status.success("Jailbreak complete");
             

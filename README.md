@@ -4,7 +4,7 @@
 <h1 align="center">PS5 BD-JB Autoloader</h1>
 <h3 align="center">Fork of <a href="https://github.com/Gezine/BD-UN-JB">BD-UN-JB</a></h3>
 &nbsp;
-<p align="center">Automatically loads your .elf, .bin and .jar payloads.<br>Supports PS5 firmwares up to 7.61. <br><b>Note:</b> If you are already jailbroken on a higher firmware (up to 12.00), you can make it work by using the `bdj_unpatch` payload.
+<p align="center">Automatically loads your .elf, .bin and .jar payloads.<br>Supports PS5 firmwares up to 7.61. <br><b>Note:</b> If you are already jailbroken on a higher firmware (up to 12.00), you can make it work by using the `bdj_unpatch` payload.</p>
 
 <p align="center">
     <b>Other Autoloaders:</b><br>

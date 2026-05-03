@@ -24,7 +24,7 @@ public class InitXlet implements Xlet {
     public void initXlet(XletContext context) {
         Status.setScreenOutputEnabled(true);
         Status.setNetworkLoggerEnabled(false);
-        Status.info("BD-J init");
+        Status.info("PS5 BD-JB Autoloader v" + Version.VERSION + " by PLK");
 
         screen = Screen.getInstance();
         screen.setSize(1920, 1080);

@@ -35,7 +35,7 @@ public class InternalJarLoader implements Runnable {
                     Status.warning("autoloader.jar not found at /disc/autoloader.jar");
                 }
             } else {
-                Status.error("Jailbreak not detected, skipping autoloader.jar");
+                Status.error("Kernel exploit failed, skipping autoloader.jar");
             }
         } catch (IOException e) {
             Status.printStackTrace("JarLoader error", e);
