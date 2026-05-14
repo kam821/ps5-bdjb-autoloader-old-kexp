@@ -1,4 +1,4 @@
-FROM eclipse-temurin:8-jdk
+FROM eclipse-temurin:8-jdk-jammy
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -13,7 +13,7 @@ RUN git clone --depth 1 --recurse-submodules https://github.com/john-tornblom/bd
 
 # Build makefs and place it in bdj-sdk host/bin (where Makefile expects it)
 RUN cd /opt/bdj-sdk/host/src/makefs_termux \
-    && make \
+    && CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=int-conversion" make \
     && cp makefs /opt/bdj-sdk/host/bin/makefs \
     && chmod +x /opt/bdj-sdk/host/bin/makefs \
     && cp makefs /usr/local/bin/makefs \
