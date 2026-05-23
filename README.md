@@ -4,7 +4,7 @@
 <h1 align="center">PS5 BD-JB Autoloader</h1>
 <h3 align="center">Fork of <a href="https://github.com/Gezine/BD-UN-JB">BD-UN-JB</a></h3>
 &nbsp;
-<p align="center">Automatically loads your .elf, .bin and .jar payloads.<br>Supports PS5 firmwares 6.00-12.00. <br><b>Note:</b> To work on firmwares <b>above 7.61</b>, the PS5 must already be jailbroken (requires the <a href="https://github.com/Gezine/BD-UN-JB/releases">bdj_unpatch</a> payload).</p>
+<p align="center">Automatically loads your .elf, .bin and .jar payloads.<br>Supports PS5 firmwares 4.03-12.00. <br><b>Note:</b> To work on firmwares <b>above 7.61</b>, the PS5 must already be jailbroken (requires the <a href="https://github.com/Gezine/BD-UN-JB/releases">bdj_unpatch</a> payload).</p>
 
 <p align="center">
     <b>Other Autoloaders:</b><br>
@@ -48,11 +48,22 @@ This autoloader is deployed via a BD-R disc.
 <Details>
 <Summary><i>How to use custom ELF Loader version?</i></Summary>
 
-By default, the autoloader uses a bundled version of **elfldr** that only accepts connections from the PS5 itself (localhost). This improves security by preventing other devices on your network from sending payloads to your console.
+By default, the autoloader uses a custom version of **elfldr** that only accepts connections from the PS5 itself (localhost). This improves security by preventing other devices on your network from sending payloads to your console.
 
 If you want to use a "normal" ELF Loader that allows sending payloads from any device:
-1. Place your `elfldr.elf` in the `ps5_autoloader` directory.
-2. Add `elfldr.elf` as the first entry in your `autoload.txt`.
+1. Place your custom ELF Loader (e.g. `elfldr.elf`) in the `ps5_autoloader` directory.
+2. Add `elfldr.elf` to your `autoload.txt`.
+3. **Note**: If you are loading other payloads right after `elfldr.elf` in your `autoload.txt`, add a sleep command immediately after it (like `!4000` to sleep for 4 seconds) to give the new ELF Loader time to start up and listen before subsequent payloads are sent.
+
+Example `autoload.txt`:
+```text
+# Load custom ELF Loader
+elfldr.elf
+# Give it 4 seconds to start up (only needed if sending more payloads)
+!4000
+# Send other payloads
+ftpsrv.elf
+```
 </Details>
 
 <Details>
